@@ -1,0 +1,24 @@
+{
+  "name": "journal-cli",
+  "version": "1.0.0",
+  "main": "bot.js",
+  "bin": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "@google-cloud/local-auth": "^2.1.0",
+    "commander": "^14.0.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "figlet": "^1.9.3",
+    "googleapis": "^105.0.0",
+    "inquirer": "^12.10.0",
+    "natural": "^8.1.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "sentiment": "^5.0.2",
+    "terminal-kit": "^3.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
