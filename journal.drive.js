@@ -5,7 +5,6 @@ const { Readable } = require('stream');
 require('dotenv').config();
 
 const ui = require('./journal.ui');
-const credentials = require('./credentials.json');
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
