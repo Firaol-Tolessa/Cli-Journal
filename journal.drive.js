@@ -2,9 +2,10 @@ const fs = require('fs');
 const { google } = require('googleapis');
 const { file } = require('googleapis/build/src/apis/file');
 const { Readable } = require('stream');
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 const ui = require('./journal.ui');
+const credentials = require('./credentials.json');
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -124,7 +125,7 @@ class Journal {
   }
 
   async publish(driveService, media, metadata) {
-    console.log("metaddaar ", this.metadataFileId);
+    // console.log("metaddaar ", this.metadataFileId);
 
     try {
       console.log('Uploading file...');
@@ -177,33 +178,39 @@ class Journal {
   }
 
   async getLastFile() {
-    const auth = await this.authorize();
-    const driveService = await google.drive({ version: "v3", auth });
-    try {
-      const response = await driveService.files.list({
-        pageSize: 5,
-        fields: 'files(id, name, modifiedTime)',
-        orderBy: 'modifiedTime desc',
-      })
-      const files = response.data.files;
-      const lastFile = (files[0].name == 'metadata.json') ? files[1] : files[0];
+  const auth = await this.authorize();
+  const driveService = await google.drive({ version: "v3", auth });
+  try {
+    const response = await driveService.files.list({
+      pageSize: 5,
+      fields: 'files(id, name, modifiedTime)',
+      orderBy: 'modifiedTime desc',
+      q: `'${this.entriesFolderId}' in parents and trashed = false` // <-- search only in entries folder
+    });
 
-      const journal = await this.getFile(lastFile.id);
-
-      ui.journalDisplay({ date: lastFile.name.split('.')[0], mood: journal.mood, themes: journal.tags, entry: journal.entry });
-      // .then((journal) => {
-      //   console.log('\n \x1b[32m' + lastFile.name.split('.')[0] + '\x1b[0m' +
-      //     '\x1b[33m' + '  [mood : ' + journal.mood + '] \x1b[0m' +
-      //     '\x1b[33m' + ' [tags : ' + journal.tags + ']' + '\x1b[0m \n');
-      //   console.log(journal.entry);
-      //   console.log('──────────────────────────────────────────────');
-
-return { date: lastFile.name.split('.')[0], mood: journal.mood, themes: journal.tags, entry: journal.entry };
-    } catch (error) {
-      console.log(error);
-
+    const files = response.data.files;
+    if (!files || files.length === 0) {
+      console.log('No files found in entries folder.');
+      return null;
     }
+
+    const lastFile = (files[0].name === 'metadata.json') ? files[1] : files[0];
+
+    const journal = await this.getFile(lastFile.id)
+      const data = {
+        date: lastFile.name.split('.')[0],
+        mood: journal.mood,
+        themes: journal.tags,
+        entry: journal.entry
+      };
+      ui.journalDisplay(data);
+      return data;
+    
+
+  } catch (error) {
+    console.log(error);
   }
+}
 
   async updateFile(fileId, newContent) {
     const auth = await this.authorize();
@@ -232,7 +239,7 @@ return { date: lastFile.name.split('.')[0], mood: journal.mood, themes: journal.
       const response = await googleDriveClient.files.list
         ({
           pageSize: 150,
-          q: `'${this.entriesFolderId}' in parents `
+          q: `'${this.entriesFolderId}' in parents and trashed=false`
         });
 
       if (response && response.data && response.data.files) {
@@ -240,10 +247,10 @@ return { date: lastFile.name.split('.')[0], mood: journal.mood, themes: journal.
       }
 
       if (bot) {
-         const entries = await this.listJournalsBot(listall, startDate, endDate, _RESULT);
-         console.log(entries);
-         
-         return entries;
+        const entries = await this.listJournalsBot(listall, startDate, endDate, _RESULT);
+        console.log(entries);
+
+        return entries;
       } else {
         this.listJournalsCli(listall, startDate, endDate, _RESULT);
       }
@@ -303,7 +310,7 @@ return { date: lastFile.name.split('.')[0], mood: journal.mood, themes: journal.
       }
 
     }
- 
+
     return entries;
   }
 }

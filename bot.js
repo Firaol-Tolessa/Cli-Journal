@@ -1,5 +1,5 @@
 const TelegramBot = require("node-telegram-bot-api");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const express = require("express");
 
 const app = express();
@@ -67,7 +67,7 @@ function buildJournalListKeyboard(journals, page = 0, pageSize = 10) {
 
     // Each journal becomes a button showing date + mood
     const buttons = slice.map(j => {
-        const text = `${j.date} | ${j.mood} | ${j.theme}`;
+        const text = `${j.date} | ${j.mood} | ${(j.themes).join()}`;
         const callback_data = `open_${j.date}`; // unique ID for callback
         return [{ text, callback_data }];
     });
@@ -95,7 +95,7 @@ bot.on("callback_query", async (callbackQuery) => {
     const chatId = callbackQuery.message.chat.id;
     const drive = await waitForDrive();
     if (data === "start") {
-        bot.sendMessage(chatId ,"👋 Welcome!",startMenu());
+        bot.sendMessage(chatId, "👋 Welcome!", startMenu());
     }
 
     if (data === "add_journal") {
@@ -132,7 +132,7 @@ bot.on("callback_query", async (callbackQuery) => {
 
             bot.sendMessage(chatId, "✅ Journal saved!");
             userState.delete(chatId);
-            bot.sendMessage(chatId ,"👋 Welcome!",startMenu());
+            bot.sendMessage(chatId, "👋 Welcome!", startMenu());
         }
     }
 
@@ -160,9 +160,9 @@ bot.on("callback_query", async (callbackQuery) => {
     if (data === "get_last") {
 
         const journal = await drive.getLastFile();
-          const text = `📅 ${journal.date}\n📝 ${journal.entry}\n💡 Mood: ${journal.mood}\n🏷️ Tags: ${journal.themes}`;
-       bot.sendMessage(chatId,text);
-       bot.sendMessage(chatId ,"👋 Welcome!",startMenu());
+        const text = `📅 ${journal.date}\n📝 ${journal.entry}\n💡 Mood: ${journal.mood}\n🏷️ Tags: ${journal.themes}`;
+        bot.sendMessage(chatId, text);
+        bot.sendMessage(chatId, "👋 Welcome!", startMenu());
 
     }
     if (data === "list_all") {
@@ -180,11 +180,14 @@ bot.on("callback_query", async (callbackQuery) => {
         const date = callbackQuery.data.replace("open_", "");
         const journal = journals.find(j => j.date === date);
         if (journal) {
-            const text = `📅 ${journal.date}\n📝 ${journal.entry}\n💡 Mood: ${journal.mood}\n🏷️ Tags: ${journal.themes}`;
+            console.log(journal.themes)
+            const text = `📅 ${journal.date}\n📝 ${journal.entry}\n💡 Mood: ${journal.mood}\n🏷️ Tags: ${(journal.themes).join()}`;
             await bot.sendMessage(chatId, text);
+            bot.sendMessage(chatId, "👋 Welcome!", startMenu());
         } else {
             await bot.sendMessage(chatId, "Journal not found.");
         }
+
     }
 
     // Handle pagination
@@ -194,7 +197,7 @@ bot.on("callback_query", async (callbackQuery) => {
         const keyboard = buildJournalListKeyboard(journals, page);
         await bot.editMessageReplyMarkup(keyboard.reply_markup, {
             chat_id: chatId,
-            message_id: query.message.message_id
+            message_id: callbackQuery.message.message_id
         });
     }
 
@@ -212,6 +215,12 @@ bot.on("message", async (msg) => {
         bot.sendMessage(chatId, `You wrote:\n\n"${msg.text}"\n\nSave this entry?`, acceptMenu());
     }
 });
+
+bot.onText(/\/clear/, (msg) => {
+    for (let i = 0; i < 100; i++) {
+        bot.deleteMessage(msg.chat.id, msg.message_id - i).catch(er => { return })
+    }
+})
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

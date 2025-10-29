@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "bot.js",
   "bin": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "journal": "./index.js"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
